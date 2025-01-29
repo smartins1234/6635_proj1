@@ -4,6 +4,9 @@ from pprint import pprint
 # import skimage
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+
+from radar_chart import *
 # from PIL import Image
 
 OUT_FOLDER = os.path.join(os.path.dirname(os.path.realpath(__file__)), "images")
@@ -121,24 +124,71 @@ def part1():
 
 
 def part2():
-    data = None
-    with open("./data/NOAA-Temperatures.csv", mode ='r')as file:
-        data = list(csv.reader(file))
+    # # NOAA Data
+    # data = None
+    # with open("./data/NOAA-Temperatures.csv", mode ='r')as file:
+    #     data = list(csv.reader(file))
     
-    data = np.array(data[5:], dtype=float)
-    colors = ["red" if val > 0 else "blue" for val in data[:, 1]]
-    print(colors)
-    xticks = [year for year in data[:, 0] if int(year)%20 == 0]
-    vals = [temp for temp in data[:, 1]]
-    start = round(min(vals), 1)
-    end = round(max(vals), 1)
-    yticks = [round(float(temp), 1) for temp in np.arange(start, end, 0.1)]
+    # data = np.array(data[5:], dtype=float)
+    # colors = ["red" if val > 0 else "blue" for val in data[:, 1]]
+    # xticks = [year for year in data[:, 0] if int(year)%20 == 0]
+    # vals = [temp for temp in data[:, 1]]
+    # start = round(min(vals), 1)
+    # end = round(max(vals), 1)
+    # yticks = [round(float(temp), 1) for temp in np.arange(start, end, 0.1)]
 
-    plt.bar(data[:, 0], data[:, 1], color=colors)
-    plt.xticks(xticks)
-    plt.yticks(yticks)
-    plt.savefig(os.path.join(OUT_FOLDER, "NOAA_chart.png"))
+    # plt.bar(data[:, 0], data[:, 1], color=colors)
+    # plt.xticks(xticks)
+    # plt.yticks(yticks)
+    # plt.xlabel("Year")
+    # plt.ylabel("Degrees C +/- From Average")
+    # plt.savefig(os.path.join(OUT_FOLDER, "NOAA_chart.png"))
+    # plt.clf()
+
+    # Cereal Data
+    filepath = "./data/Breakfast-Cereals.xls"
+    sheet = pd.read_excel(filepath, header=0, index_col=0)
+    
+    stats = ["Calories", "Protein", "Fat", "Sodium", "Fiber", "Carbohydrates", "Sugars", "Potassium"]
+    data = {
+        "Cheerios": [],
+        "Kix": [],
+        "Trix": []
+    }
+    for key in data.keys():
+        for name in stats:
+            data[key].append(sheet[name][key])
+    maxes = [0, 0, 0, 0, 0, 0, 0, 0]
+    for key in data.keys():
+        for i in range(len(stats)):
+            temp = data[key][i]
+            if temp > maxes[i]:
+                maxes[i] = temp
+
+    for key in data.keys():
+        for i in range(len(stats)):
+            data[key][i] /= maxes[i]
+
+    stats_max = []
+    for i in range(len(stats)):
+        stats_max.append("{} (Max: {})".format(stats[i], maxes[i]))
+
+    theta = radar_factory(8, frame='polygon')
+    colors = ["r", "g", "b"]
+    ax = plt.subplot(projection="radar")
+    ax.set_yticklabels([])
+    for d, color in zip(data.keys(), colors):
+        ax.plot(theta, data[d], color=color)
+        ax.fill(theta, data[d], facecolor=color, alpha=0.25, label="_nolegend_")
+    ax.set_varlabels(stats_max)
+
+    labels = data.keys()
+    legend = ax.legend(labels, loc=(0.9, .95), labelspacing=0.1, fontsize='small')
+
+    plt.savefig(os.path.join(OUT_FOLDER, "cereal_chart.png"))
     plt.clf()
+
+    
 
 def part4():
     pass
